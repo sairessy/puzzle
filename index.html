@@ -1,0 +1,230 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.min.js" integrity="sha512-NxocnqsXP3zm0Xb42zqVMvjQIktKEpTIbCXXyhBPxqGZHqhcOXHs4pXI/GoZ8lE+2NJONRifuBpi9DxC58L0Lw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@200&display=swap" rel="stylesheet">
+  <title>Puzzle</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Nunito', sans-serif;
+    }
+    
+    .peace {
+      padding: 0;
+      background: #00000044;
+      border: none;
+      width: calc(100% / 5);
+      height: calc(100% / 5);
+    }
+
+    #app-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      width: 100%;
+      height: 100vh;
+      background-color: #2bccb157;
+    }
+
+    #app-container p {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      color: #fff;
+      text-align: center;
+      width: 60px;
+      height: 60px;
+      border-radius: 100%;
+      background-color: #0000008e;
+    }
+
+    #mx-canvas {
+      background-color: #ddd;
+      width: 300px;
+      height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <p id="time">7s</p>
+  </div>
+  <script src="js/Box.js"></script>
+  <script>
+    window.onresize = () => {
+      window.location.href = "/apps/puzzle-21/index.html";
+    }
+    const lenW = 5;
+    const lenH = 5;
+    let bW;
+    let bH;
+    let sFrom;
+    let sTo;
+    let boxes = [];
+    let imgs = [];
+    let img;
+    let c;
+    let cv;
+    let t = 6;
+
+    function preload() {
+      imgs.push(loadImage("./assets/img/a.jpg"))
+      imgs.push(loadImage("./assets/img/e.jpg"))
+      imgs.push(loadImage("./assets/img/i.jpg")) 
+    }
+
+    setTimeout(() => {
+      for (let i = 0; i < 10; i++) {
+        randomSwap();
+      }
+
+      document.getElementById("app-container").style.display = "none";
+    }, 7000);
+
+    const time = setInterval(()=> {
+      document.getElementById("time").innerText = t + "s";
+      t--;
+      if(t < 0) {
+        clearInterval(time);
+      }
+    }, 1000);
+    
+    function setup() {
+      cv = createCanvas(windowWidth, windowHeight);
+      const r = Math.round(Math.random() * (imgs.length - 1));
+      img = imgs[r];
+      bW = round(width/lenW);
+      bH = round(height/lenH);
+      img.resize(width, height);
+
+      for (let i = 0; i < lenW; i++) {
+        for (let j = 0; j < lenH; j++) {
+          boxes.push(new Box(i + "" + j, i*bW, j*bH));
+        }
+      }
+
+      boxes.forEach(box => {
+        box.div.mousePressed(() => {
+          swap(box.id);
+        });
+      });
+
+    
+
+      sFrom = null;
+      sTo = null;
+    }
+
+    function draw() { 
+      background(200); 
+      frameRate(10);
+
+      for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+        box.show();
+      }
+    }
+
+    function swap(id) {
+
+      if(sFrom == null) {
+        sFrom = id;
+      } else {
+        sTo = id;
+        const pos1 = boxes.filter(b => b.id == sFrom)[0].pos;
+        const pos2 = boxes.filter(b => b.id == sTo)[0].pos;
+        const auxPos = pos2;
+        for (let i = 0; i < boxes.length; i++) {
+          const box = boxes[i];
+
+          if(box.id == sTo) {
+            boxes[i].pos = pos1;
+            boxes[i].updatePos();
+            break;
+          }
+        }
+
+        for (let i = 0; i < boxes.length; i++) {
+          const box = boxes[i];
+
+          if(box.id == sFrom) {
+            boxes[i].pos = auxPos;
+            boxes[i].updatePos();
+            if(gameEnd()) {
+              alert("Congratulations 👍😎💪🖖!!!");
+              setTimeout(() => {
+                window.location.href = "/apps/puzzle-21/index.html";
+              }, 3000);
+            }
+            break;
+          }
+        }
+
+        sFrom = null;
+        sTo = null;
+      }
+    }
+
+    function gameEnd() {
+      let end = true;
+      for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+        if(box.pos.x != box.correctPos.x || box.pos.y != box.correctPos.y) {
+          end = false;
+          break;
+        }
+      }
+
+      return end;
+    }
+
+    function randomSwap() {
+      const f = Math.round(Math.random() * (boxes.length - 1));
+      const t = Math.round(Math.random() * (boxes.length - 1));;
+
+      const sF = boxes[f].id;
+      const sT = boxes[t].id;
+
+      const pos1 = boxes.filter(b => b.id == sF)[0].pos;
+      const pos2 = boxes.filter(b => b.id == sT)[0].pos;
+      const auxPos = pos2;
+      for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+
+        if(box.id == sT) {
+          boxes[i].pos = pos1;
+          boxes[i].updatePos();
+          break;
+        }
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+
+        if(box.id == sF) {
+          boxes[i].pos = auxPos;
+          boxes[i].updatePos();
+          break;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
